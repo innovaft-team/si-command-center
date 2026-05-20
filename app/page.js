@@ -1,65 +1,97 @@
-import Image from "next/image";
+import ProjectsGrid from '@/components/ProjectsGrid'
+import { getSupabaseClient } from '@/lib/supabase'
 
-export default function Home() {
+export const metadata = {
+  title: 'SI Command Center',
+  description: 'A centralized dashboard to view all active SI projects.',
+}
+
+async function getProjects() {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('projects')
+    .select('project_code, project_name')
+    .order('project_code', { ascending: true })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data
+}
+
+export default async function Home() {
+  let projects = []
+  let fetchError = null
+
+  try {
+    projects = await getProjects()
+  } catch (err) {
+    fetchError = err.message
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen bg-[#0f0f0f] px-6 py-12 md:px-12 lg:px-20">
+      {/* Header */}
+      <header className="mb-12 text-center">
+        <div className="inline-flex items-center gap-3 mb-4">
+          <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-emerald-400 text-sm font-medium tracking-widest uppercase">
+            Live Dashboard
+          </span>
+          <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-4">
+          SI Command Center
+        </h1>
+        <p className="text-gray-400 text-lg max-w-xl mx-auto">
+          Centralized view of all active projects across the organization.
+        </p>
+        <div className="mt-6 w-24 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent mx-auto" />
+      </header>
+
+      {/* Content */}
+      {fetchError ? (
+        <div className="max-w-lg mx-auto">
+          <div className="bg-red-950/50 border border-red-500/30 rounded-2xl p-8 text-center backdrop-blur-sm">
+            <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-red-400 font-semibold text-lg mb-2">Failed to load projects</h2>
+            <p className="text-red-300/70 text-sm">{fetchError}</p>
+          </div>
         </div>
-      </main>
-    </div>
-  );
+      ) : projects.length === 0 ? (
+        <div className="max-w-lg mx-auto text-center">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-12">
+            <p className="text-gray-500 text-lg">No projects found.</p>
+            <p className="text-gray-600 text-sm mt-2">Add rows to the <code className="text-emerald-400">projects</code> table in Supabase.</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Stats bar */}
+          <div className="flex justify-center mb-10">
+            <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-5 py-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-gray-300 text-sm">
+                <span className="text-white font-semibold">{projects.length}</span>{' '}
+                {projects.length === 1 ? 'project' : 'projects'} found
+              </span>
+            </div>
+          </div>
+
+          {/* Cards grid */}
+          <ProjectsGrid projects={projects} />
+        </>
+      )}
+
+      {/* Footer */}
+      <footer className="mt-20 text-center text-gray-600 text-sm">
+        <p>SI Command Center &mdash; Powered by Supabase &amp; Next.js</p>
+      </footer>
+    </main>
+  )
 }
